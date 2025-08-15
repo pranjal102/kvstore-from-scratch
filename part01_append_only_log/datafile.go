@@ -86,6 +86,11 @@ func (df *DataFile) ReplaceWith(newFile *DataFile) error {
 // The DatFileWriter uses a buffered writer for efficient writing to the underlying file.
 // It returns the DatFileWriter and any error encountered during creation.
 func (df *DataFile) Writer() (*DatFileWriter, error) {
+
+	_, err := df.file.Seek(0, io.SeekEnd) // Ensure the file pointer is at the end of the file before writing new records
+	if err != nil {
+		return nil, err
+	}
 	return &DatFileWriter{
 		writer: bufio.NewWriter(df.file),
 	}, nil

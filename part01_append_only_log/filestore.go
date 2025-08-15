@@ -19,10 +19,6 @@ type FileStore struct {
 	dbFile *DataFile
 }
 
-//TODO : file store should be able to do the following:
-// 1) Read DB file and populate the hash index
-// 2) If DB file exits then do not overwrite it, just open it and use it.
-
 // ConnectFileStore initializes and returns a new FileStore instance at the specified file path.
 // It ensures that the directory for the file exists, creating it if necessary.
 // If the directory cannot be created or the data file cannot be opened, an error is returned.
@@ -41,8 +37,6 @@ func ConnectFileStore(path string) (Store, error) {
 		dbFile: file,
 	}, nil
 }
-
-//TODO - Ensure the file pointer is at the end of the file before writing new records.
 
 // Put stores the given key-value pair in the file store.
 // It appends a new record with the specified key and value to the underlying database file.
@@ -65,8 +59,6 @@ func (f *FileStore) Put(K, V string) error {
 	}
 	return nil
 }
-
-//TODO Use index to get the offset of the key
 
 // Get retrieves the value associated with the given key K from the file store.
 // It iterates through the records in the underlying database file, searching for
