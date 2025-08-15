@@ -9,7 +9,6 @@ import (
 type FileIterator struct {
 	scanner    *bufio.Scanner
 	openedfile *os.File
-	currPos    int
 }
 
 func newFileIterator(openedfile *os.File, offset int64) (*FileIterator, error) {
@@ -20,7 +19,6 @@ func newFileIterator(openedfile *os.File, offset int64) (*FileIterator, error) {
 	scanner := bufio.NewScanner(openedfile)
 	fileIterator := &FileIterator{
 		scanner:    scanner,
-		currPos:    -1,
 		openedfile: openedfile,
 	}
 	return fileIterator, nil
@@ -30,10 +28,9 @@ func (fi *FileIterator) HasNext() bool {
 	return fi.scanner.Scan()
 }
 
-func (fi *FileIterator) Get() (record, int) {
+func (fi *FileIterator) Get() record {
 	var data record
 	line := fi.scanner.Text()
-	fi.currPos++
 	data.FromString(line)
-	return data, fi.currPos
+	return data
 }

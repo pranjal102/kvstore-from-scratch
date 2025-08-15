@@ -72,7 +72,7 @@ func (f *FileStore) Get(K string) (string, error) {
 	}
 	valueForKey := ""
 	for iterator.HasNext() {
-		record, _ := iterator.Get()
+		record := iterator.Get()
 		if record.operation == OPERATION_PUT && record.data.key == K {
 			valueForKey = record.data.val
 		} else if record.operation == OPERATION_DEL && record.data.key == K { // If a delete operation is found for the key, reset valueForKey
