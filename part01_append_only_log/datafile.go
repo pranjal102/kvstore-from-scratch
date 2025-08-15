@@ -19,13 +19,22 @@ type DataFile struct {
 	file     *os.File
 }
 
-// NewDataFile creates a new DataFile instance by creating a file at the specified path.
-// The file is created with the PRIMARY_FILENAME in the given directory.
-// Returns a pointer to the DataFile and an error if the file creation fails.
+// NewDataFile creates a new DataFile instance by opening or creating the primary data file
+// at the specified directory path. It returns a pointer to the DataFile and an error if
+// the file cannot be opened or created.
+//
+// Parameters:
+//
+//	path - The directory path where the data file should be located.
+//
+// Returns:
+//
+//	*DataFile - Pointer to the created DataFile instance.
+//	error     - Error encountered during file opening or creation, or nil if successful.
 func NewDataFile(path string) (*DataFile, error) {
 	fullPath := filepath.Join(path, PRIMARY_FILENAME)
 
-	f, err := os.Create(fullPath)
+	f, err := os.OpenFile(fullPath, os.O_RDWR|os.O_CREATE, 0644)
 	if err != nil {
 		return nil, err
 	}
