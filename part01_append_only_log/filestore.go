@@ -43,20 +43,16 @@ func ConnectFileStore(path string) (Store, error) {
 // Returns an error if writing or flushing the record fails.
 func (f *FileStore) Put(K, V string) error {
 
-	writer, err := f.dbFile.Writer()
-	if err != nil {
-		return err
-	}
 	dataToAppend := record{
 		operation: OPERATION_PUT,
 		data:      KVPair{key: K, val: V},
 	}
-	if _, err = writer.Append(dataToAppend); err != nil {
+
+	_, err := f.dbFile.Append(dataToAppend)
+	if err != nil {
 		return err
 	}
-	if err := writer.Flush(); err != nil {
-		return err
-	}
+
 	return nil
 }
 
@@ -90,18 +86,12 @@ func (f *FileStore) Get(K string) (string, error) {
 // It appends a delete operation record to the underlying database file and flushes the changes.
 // Returns an error if writing or flushing the record fails.
 func (f *FileStore) Del(K string) error {
-	writer, err := f.dbFile.Writer()
-	if err != nil {
-		return err
-	}
 	dataToAppend := record{
 		operation: OPERATION_DEL,
 		data:      KVPair{key: K},
 	}
-	if _, err := writer.Append(dataToAppend); err != nil {
-		return err
-	}
-	if err := writer.Flush(); err != nil {
+	_, err := f.dbFile.Append(dataToAppend)
+	if err != nil {
 		return err
 	}
 	return nil

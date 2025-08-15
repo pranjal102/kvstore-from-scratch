@@ -91,6 +91,22 @@ func (df *DataFile) ReplaceWith(newFile *DataFile) error {
 	return nil
 }
 
+func (df *DataFile) Append(data record) (int, error) {
+	writer, err := df.Writer()
+	if err != nil {
+		return 0, err
+	}
+	bytesWritten, err := writer.Append(data)
+	if err != nil {
+		return 0, err
+	}
+	err = writer.Flush()
+	if err != nil {
+		return 0, err
+	}
+	return bytesWritten, nil
+}
+
 // Writer returns a new DatFileWriter instance associated with the DataFile.
 // The DatFileWriter uses a buffered writer for efficient writing to the underlying file.
 // It returns the DatFileWriter and any error encountered during creation.
