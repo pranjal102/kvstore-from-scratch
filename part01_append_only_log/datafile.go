@@ -91,6 +91,7 @@ func (df *DataFile) ReplaceWith(newFile *DataFile) error {
 	return nil
 }
 
+// Append writes a record to the data file and flushes the buffer. Returns bytes written and error.
 func (df *DataFile) Append(data record) (int, error) {
 	writer, err := df.Writer()
 	if err != nil {
