@@ -10,7 +10,6 @@ import (
 
 const (
 	PRIMARY_FILENAME = "my.db"
-	TEMP_FILENAME    = "tmp.db"
 )
 
 type DataFile struct {
@@ -47,17 +46,6 @@ func NewDataFile(path string) (*DataFile, error) {
 	}, nil
 }
 
-// IsEmpty checks whether the data file at the specified path is empty.
-// It returns true if the file exists and its size is zero, otherwise false.
-// If there is an error retrieving the file information, it returns false.
-func (df *DataFile) IsEmpty() bool {
-	info, err := os.Stat(df.fullpath)
-	if err != nil {
-		return false
-	}
-	return info.Size() == 0
-}
-
 // GetIterator returns a new FileIterator starting at the specified offset within the DataFile.
 // It provides sequential access to the file's contents from the given position.
 // If the iterator cannot be created, an error is returned.
@@ -65,34 +53,7 @@ func (df *DataFile) GetIterator(offset int64) (*FileIterator, error) {
 	return newFileIterator(df.file, offset)
 }
 
-// NewSibblingFile creates a new sibling data file in the same directory as the current DataFile.
-// The new file is created with a temporary filename defined by TEMP_FILENAME.
-// It returns a pointer to the newly created DataFile and an error if the file creation fails.
-func (df *DataFile) NewSibblingFile() (*DataFile, error) {
-	fullPath := filepath.Join(df.dir, TEMP_FILENAME)
-	f, err := os.Create(fullPath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DataFile{
-		dir:      df.dir,
-		fullpath: fullPath,
-		file:     f,
-	}, nil
-}
-
-func (df *DataFile) ReplaceWith(newFile *DataFile) error {
-
-	if err := os.Rename(newFile.fullpath, df.fullpath); err != nil {
-		return err
-	}
-	df.file = newFile.file // Update the current DataFile's file reference to the new file
-
-	return nil
-}
-
-// Append writes a record to the data file, flushes, and returns total bytes written so far.
+// Append writes the record to the file, flushes, and returns the starting byte offset.
 func (df *DataFile) Append(data record) (int64, error) {
 	writer, err := df.Writer()
 	if err != nil {
@@ -106,8 +67,9 @@ func (df *DataFile) Append(data record) (int64, error) {
 	if err != nil {
 		return 0, err
 	}
+	startingOffset := df.bytesWrittenSoFar
 	df.bytesWrittenSoFar += bytesWritten
-	return df.bytesWrittenSoFar, nil
+	return startingOffset, nil
 }
 
 // Writer returns a new DatFileWriter instance associated with the DataFile.
@@ -123,21 +85,16 @@ func (df *DataFile) Writer() (*DatFileWriter, error) {
 	}, nil
 }
 
-func (df *DataFile) Open() error {
-
-	file, err := os.OpenFile(df.fullpath, os.O_RDWR, 0644)
-	if err != nil {
-		return err
-	}
-
-	df.file = file
-	return nil
-}
-
+// Close closes the underlying file associated with the DataFile, releasing any
+// resources held by it. It returns any error produced by the underlying file's
+// Close operation. The DataFile should not be used after Close has been called.
 func (df *DataFile) Close() error {
 	return df.file.Close()
 }
 
+// ReadRecordAt reads a single record (one line) starting at the given byte offset,
+// parses it with record.FromString, and returns it. The file pointer is restored to
+// the start. Returns an error if seeking, scanning, parsing fails, or no record is found.
 func (df *DataFile) ReadRecordAt(offset int64) (*record, error) {
 	_, err := df.file.Seek(int64(offset), io.SeekStart)
 	if err != nil {
