@@ -1,4 +1,4 @@
-package kvstorefromscratch
+package kvstorefromscratchpart2
 
 import (
 	"errors"
@@ -17,6 +17,7 @@ var (
 
 type FileStore struct {
 	dbFile *DataFile
+	index  *hashIndex
 }
 
 // ConnectFileStore initializes and returns a new FileStore instance at the specified file path.
@@ -33,8 +34,16 @@ func ConnectFileStore(path string) (Store, error) {
 	if err != nil {
 		return nil, err
 	}
+
+	hashIndex := NewHashIndex(1000)
+	err = hashIndex.LoadFromFile(file)
+	if err != nil {
+		return nil, err
+	}
+
 	return &FileStore{
 		dbFile: file,
+		index:  hashIndex,
 	}, nil
 }
 
@@ -48,38 +57,25 @@ func (f *FileStore) Put(K, V string) error {
 		data:      KVPair{key: K, val: V},
 	}
 
-	_, err := f.dbFile.Append(dataToAppend)
+	bytesOffset, err := f.dbFile.Append(dataToAppend)
 	if err != nil {
 		return err
 	}
-
+	f.index.Insert(K, bytesOffset)
 	return nil
 }
 
-// Get retrieves the value associated with the given key K from the file store.
-// It iterates through the records in the underlying database file, searching for
-// a record with the specified key and a PUT operation. If found, it returns the
-// corresponding value. If the key does not exist, it returns ErrKeyDoesntExist.
-// Returns an error if there is a problem accessing the iterator.
+// Get returns the value for key K or an error if not found.
 func (f *FileStore) Get(K string) (string, error) {
-	iterator, err := f.dbFile.GetIterator(0)
+	offset, err := f.index.GetOffset(K)
 	if err != nil {
 		return "", err
 	}
-	valueForKey := ""
-	for iterator.HasNext() {
-		record := iterator.Get()
-		if record.operation == OPERATION_PUT && record.data.key == K {
-			valueForKey = record.data.val
-		} else if record.operation == OPERATION_DEL && record.data.key == K { // If a delete operation is found for the key, reset valueForKey
-			// This means the key was deleted, so we should not return any value.
-			valueForKey = ""
-		}
+	recordRead, err := f.dbFile.ReadRecordAt(offset)
+	if err != nil {
+		return "", err
 	}
-	if valueForKey == "" {
-		return "", ErrKeyDoesntExist
-	}
-	return valueForKey, nil
+	return recordRead.GetValue(), nil
 }
 
 // Del deletes the key-value pair associated with the given key K from the file store.
@@ -94,6 +90,9 @@ func (f *FileStore) Del(K string) error {
 	if err != nil {
 		return err
 	}
+	//delete from index as-well
+	f.index.Delete(K) // If the key doesn't exist, it's a no-op
+
 	return nil
 }
 

@@ -1,4 +1,4 @@
-package kvstorefromscratch
+package kvstorefromscratchpart2
 
 import (
 	"bufio"
@@ -14,9 +14,10 @@ const (
 )
 
 type DataFile struct {
-	dir      string
-	fullpath string
-	file     *os.File
+	dir               string
+	fullpath          string
+	file              *os.File
+	bytesWrittenSoFar int64 // Track the total bytes written so far
 }
 
 // NewDataFile creates a new DataFile instance by opening or creating the primary data file
@@ -91,8 +92,8 @@ func (df *DataFile) ReplaceWith(newFile *DataFile) error {
 	return nil
 }
 
-// Append writes a record to the data file and flushes the buffer. Returns bytes written and error.
-func (df *DataFile) Append(data record) (int, error) {
+// Append writes a record to the data file, flushes, and returns total bytes written so far.
+func (df *DataFile) Append(data record) (int64, error) {
 	writer, err := df.Writer()
 	if err != nil {
 		return 0, err
@@ -105,14 +106,14 @@ func (df *DataFile) Append(data record) (int, error) {
 	if err != nil {
 		return 0, err
 	}
-	return bytesWritten, nil
+	df.bytesWrittenSoFar += bytesWritten
+	return df.bytesWrittenSoFar, nil
 }
 
 // Writer returns a new DatFileWriter instance associated with the DataFile.
 // The DatFileWriter uses a buffered writer for efficient writing to the underlying file.
 // It returns the DatFileWriter and any error encountered during creation.
 func (df *DataFile) Writer() (*DatFileWriter, error) {
-
 	_, err := df.file.Seek(0, io.SeekEnd) // Ensure the file pointer is at the end of the file before writing new records
 	if err != nil {
 		return nil, err
