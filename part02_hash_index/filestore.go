@@ -35,7 +35,7 @@ func ConnectFileStore(path string) (Store, error) {
 		return nil, err
 	}
 
-	hashIndex := NewHashIndex(1000)
+	hashIndex := NewHashIndex(1000000)
 	err = hashIndex.LoadFromFile(file)
 	if err != nil {
 		return nil, err
@@ -57,11 +57,11 @@ func (f *FileStore) Put(K, V string) error {
 		data:      KVPair{key: K, val: V},
 	}
 
-	bytesOffset, err := f.dbFile.Append(dataToAppend)
+	startingOffset, err := f.dbFile.Append(dataToAppend)
 	if err != nil {
 		return err
 	}
-	f.index.Insert(K, bytesOffset)
+	f.index.Insert(K, startingOffset)
 	return nil
 }
 

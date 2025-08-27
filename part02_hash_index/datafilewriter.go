@@ -12,7 +12,8 @@ type DatFileWriter struct {
 func (dfw *DatFileWriter) Append(data record) (int64, error) {
 	record := data.String()
 	var bytes int
-	if bytes, err := fmt.Fprintln(dfw.writer, record); err != nil {
+	var err error
+	if bytes, err = fmt.Fprintln(dfw.writer, record); err != nil {
 		return int64(bytes), err
 	}
 	return int64(bytes), nil

@@ -1,4 +1,4 @@
-package kvstorefromscratch
+package kvstorefromscratchpart2
 
 import (
 	"testing"
@@ -13,9 +13,10 @@ func TestFileStore_PutGetDel(t *testing.T) {
 	}
 	defer store.Close()
 
-	// Test Put
 	key := "foo"
 	val := "bar"
+
+	// Test Put
 	if err := store.Put(key, val); err != nil {
 		t.Fatalf("Put failed: %v", err)
 	}

@@ -1,13 +1,5 @@
 package kvstorefromscratchpart2
 
-import (
-	"errors"
-)
-
-const (
-	ErrorKeyNotFound = "key not found"
-)
-
 type hashIndex struct {
 	index   [][]keyOffset
 	maxHash int
@@ -64,14 +56,14 @@ func (hi *hashIndex) GetOffset(key string) (int64, error) {
 	hashOfKey := hash(key)
 	pos := hashOfKey % int64(hi.maxHash)
 	if hi.index[pos] == nil {
-		return -1, errors.New(ErrorKeyNotFound)
+		return -1, ErrKeyDoesntExist
 	}
 	for _, ko := range hi.index[pos] {
 		if ko.Key == key {
 			return ko.Offset, nil
 		}
 	}
-	return -1, errors.New(ErrorKeyNotFound)
+	return -1, ErrKeyDoesntExist
 }
 
 // Delete removes the entry associated with the given key from the hash index.
@@ -93,6 +85,8 @@ func (hi *hashIndex) Delete(key string) {
 	}
 }
 
+// LoadFromFile rebuilds the index by replaying records from file (from offset 0).
+// PUT -> Insert(key, offset); DEL -> Delete(key). Returns any iterator error.
 func (hi *hashIndex) LoadFromFile(file *DataFile) error {
 	iterator, err := file.GetIterator(0)
 	if err != nil {
@@ -101,8 +95,11 @@ func (hi *hashIndex) LoadFromFile(file *DataFile) error {
 
 	for iterator.HasNext() {
 		record, startingOffset := iterator.Get()
-		if record.operation == OPERATION_PUT {
+		switch record.operation {
+		case OPERATION_PUT:
 			hi.Insert(record.data.key, startingOffset)
+		case OPERATION_DEL:
+			hi.Delete(record.data.key)
 		}
 	}
 	return nil
